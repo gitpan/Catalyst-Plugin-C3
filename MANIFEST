@@ -1,11 +1,12 @@
 Build.PL
 Changes
 lib/Catalyst/Plugin/C3.pm
+Makefile.PL
 MANIFEST			This list of files
+META.yml
+README
 t/01use.t
 t/02pod.t
 t/03podcoverage.t
 t/04kwalitee.t
-Makefile.PL
-README
-META.yml
+t/10basics.t

@@ -6,7 +6,7 @@ my %arguments = (
     module_name        => 'Catalyst::Plugin::C3',
     requires           => {
         'NEXT'       => 0.60,
-        'Class::C3'  => 0.11,
+        'Class::C3'  => 0.12,
     },
     build_requires     => {
         'Test::More' => 0.32,

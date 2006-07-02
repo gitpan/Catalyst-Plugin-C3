@@ -2,10 +2,10 @@ package Catalyst::Plugin::C3;
 
 use strict;
 use warnings;
-use Class::C3;
 use NEXT;
+use Class::C3;
 
-our $VERSION = '0.01000_01';
+our $VERSION = '0.01000_04';
 
 =head1 NAME
 
@@ -87,38 +87,49 @@ transitioning it to use L<Class::C3>.
 #  ->isa Catalyst object of some sort AND the object has a C3-valid
 #  inheritance heirarchy.
 {
-    my %__c3_mro_validity_cache;
+    my %__c3_mro_warn_once;
     my $__saved_next_autoload = \&NEXT::AUTOLOAD;
 
     sub __hacked_next_autoload {
+        # $class is the class of the object ->NEXT::methodname was used on
         my $class = ref $_[0] || $_[0];
 
-        if (    $class->isa('Catalyst::Component')
-             || $class->isa('Catalyst::Action')
-             || $class->isa('Catalyst::Request')
-             || $class->isa('Catalyst::Response')
-             || $class->isa('Catalyst::Engine')
-             || $class->isa('Catalyst::Dispatcher')
-             || $class->isa('Catalyst::DispatchType')
-             || $class->isa('Catalyst::Exception')
-             || $class->isa('Catalyst::Log')          ) {
+        my $wanted = $Catalyst::Plugin::C3::AUTOLOAD || 'NEXT::AUTOLOAD';
+        my ($wanted_class, $wanted_method) = $wanted =~ m{(.*)::(.*)}g;
+        goto &__saved_next_autoload if ! $class->isa('Catalyst::Component')
+                                    && ! $class->isa('Catalyst::Action')
+                                    && ! $class->isa('Catalyst::Request')
+                                    && ! $class->isa('Catalyst::Response')
+                                    && ! $class->isa('Catalyst::Engine')
+                                    && ! $class->isa('Catalyst::Dispatcher')
+                                    && ! $class->isa('Catalyst::DispatchType')
+                                    && ! $class->isa('Catalyst::Exception')
+                                    && ! $class->isa('Catalyst::Log');
 
-            goto &next::method if $__c3_mro_validity_cache{$class};
-
-            if ( ! exists $__c3_mro_validity_cache{$class} ) {
-                eval { Class::C3::calculateMRO($class) };
-                if(!$@) {
-                    $__c3_mro_validity_cache{$class} = 1;
-                    goto &next::method;
-                }
-                warn "Class::C3::calculateMRO('$class') Error: $@; Falling"
-                   . ' back to plain NEXT.pm behavior for this class';
-                $__c3_mro_validity_cache{$class} = 0;
-            }
+        eval { Class::C3::calculateMRO($class) };
+        if($@) {
+            warn "Class::C3::calculateMRO('$class') Error: $@; Falling"
+               . ' back to plain NEXT.pm behavior for this class'
+                if ! $__c3_mro_warn_once{$class}++;
+            goto &$__saved_next_autoload;
         }
-        goto &$__saved_next_autoload;
+
+        goto &next::method if $wanted_class =~ /^NEXT:.*:ACTUAL/;
+        goto &next::method_ifcan; # XXX See Below
     }
 }
+
+# XXX This makes ->next::method_ifcan, which we need for goto/caller reasons
+#   TODO: get a convenience method like this into the real Class::C3
+package   # hide me from PAUSE
+    next;
+
+sub method_ifcan {
+    return if ! _find($_[0], 0);
+    goto &{_find($_[0], 1)};
+}
+
+package Catalyst::Plugin::C3;
 
 =head2 handle_request
 
