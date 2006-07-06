@@ -5,7 +5,7 @@ use warnings;
 use NEXT;
 use Class::C3;
 
-our $VERSION = '0.01000_04';
+our $VERSION = '0.01000_05';
 
 =head1 NAME
 
@@ -125,8 +125,8 @@ package   # hide me from PAUSE
     next;
 
 sub method_ifcan {
-    return if ! _find($_[0], 0);
-    goto &{_find($_[0], 1)};
+    return if !($_ = _find($_[0], 0));
+    goto &$_;
 }
 
 package Catalyst::Plugin::C3;

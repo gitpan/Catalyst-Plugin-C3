@@ -1,9 +1,6 @@
 use Test::More;
 use Catalyst::Plugin::C3;
 
-eval "require Catalyst";
-plan skip_all => 'Catalyst must be installed to run these tests' if $@;
-
 plan tests => 7;
 
 {

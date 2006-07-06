@@ -1,5 +1,8 @@
 Revision history for Perl extension Catalyst::Plugin::C3
 
+0.01000_05 - Thu Jul  6 02:45:51 UTC 2006
+    Just an efficiency improvement
+
 0.01000_04 - Sun Jul  2 21:13:11 UTC 2006
     Upgraded to take advantage of Class::C3 0.12, but still relatively hackish and untested
 
