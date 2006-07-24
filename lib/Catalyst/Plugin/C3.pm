@@ -5,7 +5,7 @@ use warnings;
 use NEXT;
 use Class::C3;
 
-our $VERSION = '0.01000_05';
+our $VERSION = '0.01000_06';
 
 =head1 NAME
 
@@ -115,18 +115,8 @@ transitioning it to use L<Class::C3>.
         }
 
         goto &next::method if $wanted_class =~ /^NEXT:.*:ACTUAL/;
-        goto &next::method_ifcan; # XXX See Below
+        goto &maybe::next::method;
     }
-}
-
-# XXX This makes ->next::method_ifcan, which we need for goto/caller reasons
-#   TODO: get a convenience method like this into the real Class::C3
-package   # hide me from PAUSE
-    next;
-
-sub method_ifcan {
-    return if !($_ = _find($_[0], 0));
-    goto &$_;
 }
 
 package Catalyst::Plugin::C3;
