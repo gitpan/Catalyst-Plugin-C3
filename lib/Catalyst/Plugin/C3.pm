@@ -5,7 +5,7 @@ use warnings;
 use NEXT;
 use Class::C3;
 
-our $VERSION = '0.01000_06';
+our $VERSION = '0.01';
 
 =head1 NAME
 
@@ -25,13 +25,16 @@ Use it in another plugin:
 
 =head1 DESCRIPTION
 
-*** WARNING *** THIS MODULE IS NOT FOR GENERAL PUBLIC CONSUMPTION JUST YET.
+*** WARNING *** THIS MODULE IS STILL EXPERIMENTAL !!!
 
-This module is related to the possible transition of Catalyst from NEXT
-to Class::C3.  This module is a developer release only, and is not intended
-for any sort of production use by anyone at this time.  This module will
-be upgraded to 0.02 and released if/when it seems like a good idea for
-people other than Catalyst module developers to look at it and/or use it.
+This module is related to the possible transition of Catalyst from L<NEXT>
+to L<Class::C3>.  This transition hasn't happened yet, and might not for
+a while.
+
+This module is only intended for use by Catalyst module developers at
+this time.  You would know it if you should be using this module.
+
+*** END WARNING ***
 
 This module makes the use of the following idiom:
 
@@ -49,33 +52,35 @@ actually accomplish something more like:
     my $self = shift->next::method(@_);
   }
 
-It does this by essentially pre-pending some functionality to
-L<NEXT/AUTOLOAD> which transforms the call into L<Class::C3>'s
-C<next::method> call, but only when certain specific conditions
-are met.
+It does this by temporarily replacing L<NEXT/AUTOLOAD> during the
+entire L<Catalyst> request-handling phase.  The behavior of the replacement
+function is dependant upon the class (or the class of the object) that
+L<NEXT> was being called on.
 
-Those conditions are that the object C<-E<gt>NEXT> is being
-used on is a Catalyst-related object of some sort, and that the
-inheritance heirarchy of the object's class is C3-compatible.
+If the class is not Catalyst-related, the function falls back to normal
+L<NEXT> behavior.  If the class is Catalyst-related, but its inheritance
+hierarchy is not C3-compatible, the function warns about the situation
+(once per class per interpreter) and again falls back to normal L<NEXT>
+behavior.
 
-If either of those conditions do not hold true, the C<-E<gt>NEXT>
-call should do things the normal L<NEXT> way.
+If the class is both Catalyst-related and has a C3-compatible hierarchy,
+then L<NEXT> calls are silently upgraded to their L<Class::C3> equivalents.
+
+The difference between C<$self->NEXT::foo()> and
+C<$self->NEXT::ACTUAL::foo()> is preserved (the former becomes
+C<maybe::next::method> and the latter becomes C<next::method>).
 
 If you are going to place this module in your plugins list for
 a Catalyst app, it is best placed at the top of the list, above
-all other plugins.  A good reason to stick this in your plugins
-list is that it can give a noticeable performance boost in the
-case that you're using lots of Plugins and other Catalyst
-components which still use L<NEXT> rather than L<Class::C3>.
+all other plugins.
 
-Some other plugins that have real end-user functionality may
-require this plugin as a base-class in order to transition themselves
-to L<Class::C3> without worrying about being broken by other plugins
-which haven't made the transition.  Most plugins will *not* need
-to do so.  Any that do would have wierd hacks involving C<*{NEXT::NEXT}>
-in them prior to their C3 conversion, so you'd know it.
+Some other plugins may need require this plugin as a base-class in order
+to transition themselves to L<Class::C3> without worrying about being
+broken by other plugins which haven't made the transition.  Most plugins
+will *not* need to do so.  Any that do would have wierd hacks involving
+C<*{NEXT::NEXT}> in them prior to their C3 conversion, so you'd know it.
 
-Or in other words, a plugin should only base on this plugin if it
+In other words, a plugin should only base on this plugin if it
 needed L<NEXT> hacks to work right under L<NEXT>, and you're
 transitioning it to use L<Class::C3>.
 
@@ -96,6 +101,9 @@ transitioning it to use L<Class::C3>.
 
         my $wanted = $Catalyst::Plugin::C3::AUTOLOAD || 'NEXT::AUTOLOAD';
         my ($wanted_class, $wanted_method) = $wanted =~ m{(.*)::(.*)}g;
+
+        # This could be simplified if there were a singular real Catalyst
+        #  base class that parented all of these
         goto &__saved_next_autoload if ! $class->isa('Catalyst::Component')
                                     && ! $class->isa('Catalyst::Action')
                                     && ! $class->isa('Catalyst::Request')
@@ -106,6 +114,8 @@ transitioning it to use L<Class::C3>.
                                     && ! $class->isa('Catalyst::Exception')
                                     && ! $class->isa('Catalyst::Log');
 
+        # Seems wasteful, but can we trust there were no runtime
+        #  manipulations of @ISA?
         eval { Class::C3::calculateMRO($class) };
         if($@) {
             warn "Class::C3::calculateMRO('$class') Error: $@; Falling"
@@ -125,7 +135,7 @@ package Catalyst::Plugin::C3;
 
 This plugin hooks into the C<handle_request> method, sets up a C<local>
 override of the standard version of L<NEXT/AUTOLOAD> for the entire 
-request, and then calls up the chain to the next class on the list.
+request.
 
 =cut
 

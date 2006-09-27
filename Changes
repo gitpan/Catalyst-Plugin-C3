@@ -1,5 +1,8 @@
 Revision history for Perl extension Catalyst::Plugin::C3
 
+0.01 - 26 Sep 2006
+    Initial release
+
 0.01000_06 - Mon Jul 24 06:47:59 UTC 2006
     Updated for the real Class::C3 0.12 maybe::next::method syntax
 
