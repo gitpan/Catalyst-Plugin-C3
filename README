@@ -54,8 +54,8 @@ DESCRIPTION
     If the class is both Catalyst-related and has a C3-compatible hierarchy,
     then NEXT calls are silently upgraded to their Class::C3 equivalents.
 
-    The difference between `$self-'NEXT::foo()> and
-    `$self-'NEXT::ACTUAL::foo()> is preserved (the former becomes
+    The difference between `$self->NEXT::foo()' and
+    `$self->NEXT::ACTUAL::foo()' is preserved (the former becomes
     `maybe::next::method' and the latter becomes `next::method').
 
     If you are going to place this module in your plugins list for a
@@ -77,6 +77,11 @@ METHODS
 
     This plugin hooks into the `handle_request' method, sets up a `local'
     override of the standard version of NEXT for the entire request.
+
+CAVEAT
+    Because calculating the MRO of every class every time ->NEXT::foo is
+    used from within it is too expensive, runtime manipulations of @ISA are
+    prohibited.
 
 AUTHOR
     Brandon Black `blblack@gmail.com'

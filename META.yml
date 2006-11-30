@@ -1,6 +1,6 @@
 ---
 name: Catalyst-Plugin-C3
-version: 0.01
+version: 0.02
 author:
   - 'Brandon Black C<blblack@gmail.com>'
 abstract: Catalyst Plugin to subvert NEXT to use Class::C3
@@ -8,6 +8,8 @@ license: perl
 resources:
   license: http://dev.perl.org/licenses/
 requires:
+  Algorithm::C3: 0.06
+  Catalyst: 5.7006
   Class::C3: 0.14
   NEXT: 0.6
 build_requires:
@@ -15,7 +17,7 @@ build_requires:
 provides:
   Catalyst::Plugin::C3:
     file: lib/Catalyst/Plugin/C3.pm
-    version: 0.01
+    version: 0.02
 generated_by: Module::Build version 0.2805
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html

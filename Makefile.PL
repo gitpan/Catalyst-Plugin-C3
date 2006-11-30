@@ -5,6 +5,8 @@ WriteMakefile
           'NAME' => 'Catalyst::Plugin::C3',
           'VERSION_FROM' => 'lib/Catalyst/Plugin/C3.pm',
           'PREREQ_PM' => {
+                           'Algorithm::C3' => '0.06',
+                           'Catalyst' => '5.7006',
                            'Class::C3' => '0.14',
                            'NEXT' => '0.6',
                            'Test::More' => '0.32'

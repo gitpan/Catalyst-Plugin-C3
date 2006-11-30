@@ -5,7 +5,7 @@ use warnings;
 use NEXT;
 use Class::C3;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 NAME
 
@@ -66,8 +66,8 @@ behavior.
 If the class is both Catalyst-related and has a C3-compatible hierarchy,
 then L<NEXT> calls are silently upgraded to their L<Class::C3> equivalents.
 
-The difference between C<$self->NEXT::foo()> and
-C<$self->NEXT::ACTUAL::foo()> is preserved (the former becomes
+The difference between C<$self-E<gt>NEXT::foo()> and
+C<$self-E<gt>NEXT::ACTUAL::foo()> is preserved (the former becomes
 C<maybe::next::method> and the latter becomes C<next::method>).
 
 If you are going to place this module in your plugins list for
@@ -88,11 +88,29 @@ transitioning it to use L<Class::C3>.
 
 =cut
 
+# boolean result: does this class inherit from a Cat base class?
+sub _is_cat_based {
+    my $class = shift;
+
+    # This could be simplified if there were a singular real Catalyst
+    #  base class that parented all of these:
+
+    return $class->isa('Catalyst::Component')
+        || $class->isa('Catalyst::Request')
+        || $class->isa('Catalyst::Response')
+        || $class->isa('Catalyst::Action')
+        || $class->isa('Catalyst::Engine')
+        || $class->isa('Catalyst::Dispatcher')
+        || $class->isa('Catalyst::DispatchType')
+        || $class->isa('Catalyst::Exception')
+        || $class->isa('Catalyst::Log');
+}
+
 # Hack NEXT::AUTOLOAD to use C3's ->next::method iff the object
 #  ->isa Catalyst object of some sort AND the object has a C3-valid
 #  inheritance heirarchy.
 {
-    my %__c3_mro_warn_once;
+    my %__c3_mro_ok;
     my $__saved_next_autoload = \&NEXT::AUTOLOAD;
 
     sub __hacked_next_autoload {
@@ -102,28 +120,28 @@ transitioning it to use L<Class::C3>.
         my $wanted = $Catalyst::Plugin::C3::AUTOLOAD || 'NEXT::AUTOLOAD';
         my ($wanted_class, $wanted_method) = $wanted =~ m{(.*)::(.*)}g;
 
-        # This could be simplified if there were a singular real Catalyst
-        #  base class that parented all of these
-        goto &__saved_next_autoload if ! $class->isa('Catalyst::Component')
-                                    && ! $class->isa('Catalyst::Action')
-                                    && ! $class->isa('Catalyst::Request')
-                                    && ! $class->isa('Catalyst::Response')
-                                    && ! $class->isa('Catalyst::Engine')
-                                    && ! $class->isa('Catalyst::Dispatcher')
-                                    && ! $class->isa('Catalyst::DispatchType')
-                                    && ! $class->isa('Catalyst::Exception')
-                                    && ! $class->isa('Catalyst::Log');
-
-        # Seems wasteful, but can we trust there were no runtime
-        #  manipulations of @ISA?
-        eval { Class::C3::calculateMRO($class) };
-        if($@) {
-            warn "Class::C3::calculateMRO('$class') Error: $@; Falling"
-               . ' back to plain NEXT.pm behavior for this class'
-                if ! $__c3_mro_warn_once{$class}++;
-            goto &$__saved_next_autoload;
+        # Check each class only once
+        if(!exists $__c3_mro_ok{$class}) {
+            if(_is_cat_based($class)) {
+                eval { Class::C3::calculateMRO($class) };
+                my $err = $@;
+                if($err) {
+                    warn "Class::C3::calculateMRO('$class') Error: '$err'; Falling"
+                       . ' back to plain NEXT.pm behavior for this class';
+                    $__c3_mro_ok{$class} = 0;
+                }
+                else {
+                    $__c3_mro_ok{$class} = 1;
+                }
+            }
+            else {
+                # don't muck around with non-Cat stuff that uses NEXT,
+                #  but don't warn about it either
+                $__c3_mro_ok{$class} = 0;
+            }
         }
 
+        goto &$__saved_next_autoload if !$__c3_mro_ok{$class};
         goto &next::method if $wanted_class =~ /^NEXT:.*:ACTUAL/;
         goto &maybe::next::method;
     }
@@ -144,6 +162,11 @@ sub handle_request {
     local *NEXT::AUTOLOAD = \&__hacked_next_autoload;
     shift->next::method(@_);
 }
+
+=head1 CAVEAT
+
+Because calculating the MRO of every class every time ->NEXT::foo is used
+from within it is too expensive, runtime manipulations of @ISA are prohibited.
 
 =head1 AUTHOR
 

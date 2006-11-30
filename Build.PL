@@ -5,8 +5,10 @@ my %arguments = (
     license            => 'perl',
     module_name        => 'Catalyst::Plugin::C3',
     requires           => {
-        'NEXT'       => 0.60,
-        'Class::C3'  => 0.14,
+        'NEXT'          => 0.60,
+        'Algorithm::C3' => 0.06,
+        'Class::C3'     => 0.14,
+        'Catalyst'      => 5.7006,
     },
     build_requires     => {
         'Test::More' => 0.32,

@@ -1,5 +1,11 @@
 Revision history for Perl extension Catalyst::Plugin::C3
 
+0.02 - 30 Nov 2006
+    Speed improvement - only check calculateMRO once per class
+    Caveat added about not changing @ISA at runtime
+    Dependency improvements
+    Still not for the faint of heart
+
 0.01 - 26 Sep 2006
     Initial release
 
